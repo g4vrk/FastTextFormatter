@@ -1,4 +1,6 @@
-package com.g4vrk.fastTextFormatter;
+package com.g4vrk.fastTextFormatter.type;
+
+import com.g4vrk.fastTextFormatter.TextFormatter;
 
 /**
  * Данный класс является типом

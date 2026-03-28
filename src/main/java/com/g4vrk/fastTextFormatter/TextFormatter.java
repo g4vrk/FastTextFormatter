@@ -1,36 +1,29 @@
-package com.g4vrk.functionalLib.util.formatter;
+package com.g4vrk.fastTextFormatter;
 
-import com.g4vrk.functionalLib.util.MinecraftVersion;
+import com.g4vrk.fastTextFormatter.colorizer.Colorizer;
+import com.g4vrk.fastTextFormatter.colorizer.impl.LegacyColorizer;
+import com.g4vrk.fastTextFormatter.colorizer.impl.MiniMessageColorizer;
+import com.g4vrk.fastTextFormatter.colorizer.impl.MixedColorizer;
+import com.g4vrk.fastTextFormatter.type.TextFormatType;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.ChatColor;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
 
+import static com.g4vrk.fastTextFormatter.colorizer.impl.LegacyColorizer.LEGACY_SERIALIZER;
+
 public class TextFormatter {
-
-    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
-
-    private static final LegacyComponentSerializer LEGACY_SERIALIZER =
-            LegacyComponentSerializer.builder()
-                    .character(ChatColor.COLOR_CHAR)
-                    .hexColors()
-                    .useUnusualXRepeatedCharacterHexFormat()
-                    .build();
 
     private static final PlainTextComponentSerializer PLAIN_SERIALIZER =
             PlainTextComponentSerializer.plainText();
 
-    private static final boolean LEGACY_SERVER_VERSION =
-            MinecraftVersion.current().isBelow(MinecraftVersion.v1_18_2);
-
     private final TextFormatType type;
     private final boolean cache;
+
+    private final Colorizer colorizer;
 
     private final Cache<String, Component> resultCache = Caffeine.newBuilder()
             .maximumSize(1000)
@@ -40,6 +33,11 @@ public class TextFormatter {
     private TextFormatter(Builder builder) {
         this.type = builder.type;
         this.cache = builder.cache;
+        this.colorizer = switch (type) {
+            case MINI_MESSAGE -> new MiniMessageColorizer();
+            case LEGACY -> new LegacyColorizer();
+            case MIXED -> new MixedColorizer();
+        };
     }
 
     public static Builder builder() {
@@ -54,70 +52,25 @@ public class TextFormatter {
     }
 
     public @NotNull Component format(@NotNull String input) {
-        if (!cache) return format0(input);
+        if (!cache) return colorizer.colorize(input);
 
-        return resultCache.get(input, this::format0);
+        return resultCache.get(input, colorizer::colorize);
     }
 
     public @NotNull String legacy(@NotNull String input) {
-        return LEGACY_SERIALIZER.serialize(format(input));
+        return legacy(format(input));
+    }
+
+    public @NotNull String legacy(@NotNull Component input) {
+        return LEGACY_SERIALIZER.serialize(input);
     }
 
     public @NotNull String plain(@NotNull String input) {
-        return PLAIN_SERIALIZER.serialize(format(input));
+        return plain(format(input));
     }
 
-    private Component format0(String input) {
-        return switch (type) {
-            case MINI_MESSAGE -> formatMiniMessage(input);
-            case LEGACY -> formatLegacy(input);
-            case MIXED -> formatMixed(input);
-            case AUTO -> formatAuto(input);
-        };
-    }
-
-    private Component formatMiniMessage(String input) {
-        return MINI_MESSAGE.deserialize(input);
-    }
-
-    private Component formatLegacy(String input) {
-        if (input.indexOf(LegacyComponentSerializer.AMPERSAND_CHAR) == -1) {
-            return LEGACY_SERIALIZER.deserialize(input);
-        }
-
-        return LEGACY_SERIALIZER.deserialize(
-                input.replace(LegacyComponentSerializer.AMPERSAND_CHAR, ChatColor.COLOR_CHAR)
-        );
-    }
-
-    private Component formatMixed(String input) {
-        boolean hasLegacy =
-                input.indexOf(LegacyComponentSerializer.AMPERSAND_CHAR) != -1 || input.indexOf(LegacyComponentSerializer.SECTION_CHAR) != -1;
-
-        boolean hasMini =
-                input.indexOf('<') != -1 && input.indexOf('>') != -1;
-
-        if (!hasLegacy && !hasMini) {
-            return Component.text(input);
-        }
-
-        if (!hasLegacy) {
-            return MINI_MESSAGE.deserialize(input);
-        }
-
-        if (!hasMini) {
-            return formatLegacy(input);
-        }
-
-        var legacyComponent = formatLegacy(input);
-
-        return MINI_MESSAGE.deserialize(
-                MINI_MESSAGE.serialize(legacyComponent)
-        );
-    }
-
-    private Component formatAuto(String input) {
-        return LEGACY_SERVER_VERSION ? formatLegacy(input) : formatMixed(input);
+    public @NotNull String plain(@NotNull Component input) {
+        return PLAIN_SERIALIZER.serialize(input);
     }
 
     public TextFormatType getType() {
