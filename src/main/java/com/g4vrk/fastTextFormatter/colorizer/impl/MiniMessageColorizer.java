@@ -11,7 +11,7 @@ public class MiniMessageColorizer implements Colorizer {
     private static final char MINI_MESSAGE_TAG_END = '>';
 
     public static final MiniMessage MINI_MESSAGE =
-            MiniMessage.miniMessage();
+            MiniMessage.builder().build();
 
     public MiniMessageColorizer() {
     }
