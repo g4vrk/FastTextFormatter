@@ -23,9 +23,7 @@ public enum TextFormatType {
     MINI_MESSAGE,
 
     /**
-     * Legacy + MiniMessage вместе,
-     * но как правило этот вариант
-     * тяжелый в плане оптимизации
+     * Legacy + MiniMessage вместе
      */
     MIXED,
 
