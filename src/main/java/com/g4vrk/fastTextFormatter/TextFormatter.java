@@ -9,6 +9,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
@@ -16,6 +17,11 @@ import java.time.Duration;
 import static com.g4vrk.fastTextFormatter.colorizer.impl.LegacyColorizer.LEGACY_SERIALIZER;
 
 public class TextFormatter {
+
+    private static final TextFormatter DEFAULT_INSTANCE = builder()
+            .type(TextFormatType.MIXED)
+            .cache(true)
+            .build();
 
     private static final PlainTextComponentSerializer PLAIN_SERIALIZER =
             PlainTextComponentSerializer.plainText();
@@ -30,7 +36,7 @@ public class TextFormatter {
             .expireAfterAccess(Duration.ofMinutes(10))
             .build();
 
-    private TextFormatter(Builder builder) {
+    private TextFormatter(@NotNull Builder builder) {
         this.type = builder.type;
         this.cache = builder.cache;
         this.colorizer = switch (type) {
@@ -40,15 +46,13 @@ public class TextFormatter {
         };
     }
 
-    public static Builder builder() {
+    public static @NotNull Builder builder() {
         return new Builder();
     }
 
+    @Contract(pure = true)
     public static TextFormatter textFormatter() {
-        return builder()
-                .type(TextFormatType.MIXED)
-                .cache(true)
-                .build();
+        return DEFAULT_INSTANCE;
     }
 
     public @NotNull Component format(@NotNull String input) {
