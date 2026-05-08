@@ -12,6 +12,9 @@ public class MixedColorizer implements Colorizer {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.builder().build();
     private static final LegacyComponentSerializer AMPERSAND_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
 
+    public MixedColorizer() {
+    }
+
     @Override
     public @NotNull Component colorize(@NotNull String raw) {
 
